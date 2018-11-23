@@ -10,13 +10,17 @@ $userPart = $_POST['part'];
 $userappt = $_POST['appt'];
 $userFloor = $_POST['floor'];
 $userComment = $_POST['comment'];
-
 // Объеденяю данные по адресу
 $address = "Улица: " . $userStreet . "<BR>"
     . "Дом № " . $userHome . "<BR>"
     . "Корпус № " . $userPart . "<BR>"
     . "Квартира № " . $userappt . "<BR>"
     . "Этаж № " . $userFloor;
+// Дату и время делаю так чтобы можно было дать имя файлу
+$time = date('d.m.Y h:i');
+$d = str_replace(".", "_", $time);
+$t = str_replace(" ", "-", $d);
+$timeResult = str_replace(":","_",$t);
 
 // Запрос для дальнейшей проверки наличии информации в таблице "users"
 $choice = 'select * from users';
@@ -60,8 +64,11 @@ if (!empty($userName) && !empty($userPhone) && !empty($userMail)) { // пров�
         $yourNumberOder = "Ваш номер Заказа: $idOderResult <BR>";
         $deliveryInAddress = "<BR>Будет доставлен по адресу: $addressUser<BR>";
         $comment = "Коментарии к Заказу: $userComment <BR>";
-        $thx = "<BR>Спасибо за покупку!<BR> Это Ваша $countOder покупка!";
-        echo $yourNumberOder . $deliveryInAddress . $comment . $thx;
+        $thx = "<BR>Спасибо за покупку!<BR> Это Ваша $countOder покупка!<BR>";
+        $mail = $yourNumberOder . $deliveryInAddress . $comment . $thx . $time;
+        $dir = "./mailDelivery/";
+        file_put_contents($dir."$timeResult.txt", $mail);
+        echo $mail;
         // Отправка или запись в файл
 
     } else { // Регестрируем Нового Клиента
@@ -85,8 +92,11 @@ if (!empty($userName) && !empty($userPhone) && !empty($userMail)) { // пров�
         $yourNumberOder1 = "Ваш номер Заказа: $idOderResult1 <BR>";
         $deliveryInAddress1 = "<BR>Будет доставлен по адресу: $addressUser1<BR>";
         $comment1 = "Коментарии к Заказу: $userComment1 <BR>";
-        $thx1 = "<BR>Спасибо за Заказ, это Ваша первая покупка";
-        echo $yourNumberOder1 . $deliveryInAddress1 . $comment1 . $thx1;
+        $thx1 = "<BR>Спасибо за Заказ, это Ваша первая покупка<BR>";
+        $mail = $yourNumberOder1 . $deliveryInAddress1 . $comment1 . $thx1 . $time;
+        $dir = "./mailDelivery/";
+        file_put_contents($dir."$timeResult.txt", $mail);
+        echo $mail;
     }
 } else {
     echo "Ведите пожалуйста: e-mail, телефон и свое имя, а также не забудьте адрес";
