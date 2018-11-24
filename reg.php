@@ -1,4 +1,29 @@
 <?php
+function getConnect(){
+
+}
+
+function getUser(){
+    return $userId;
+}
+
+function addUser(){
+
+}
+
+function addOrder(){
+
+}
+function sendMail(){
+
+}
+
+function main(){
+
+}
+
+main();
+
 $mySqli = new mysqli('localhost', 'root', '', 'bdvp1'); // подключаемся к БД "bdvp1"
 // Запрос информации Клиента по форме из файла "Index.html"
 $userName = $_POST['name'];
