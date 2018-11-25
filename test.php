@@ -41,7 +41,6 @@ function addUser()
     $userName = $data[0]['Name'];
     $userPhone = $data[0]['Phone'];
     $userMail = $data[0]['Mail'];
-
     $choiceResult = getConnect()->query('select * from users');
     $dataMail = $choiceResult->fetch_all();
     for ($i = 0; $i < count($dataMail); $i++) {
@@ -49,7 +48,6 @@ function addUser()
             $result = $dataMail[$i][3];
         }
     }
-
     if ($result != $userMail) {
         getConnect()->query("INSERT INTO users VALUES (NULL, '$userName', '$userPhone', '$userMail')");
     }
@@ -61,7 +59,13 @@ function addOrder()
     $userMail = $data[0]['Mail'];
     $address = $data[0]['Address'];
     $userComment = $data[0]['Comment'];
-    $idUser = checkIdOrder($userMail);
+    $choice = getConnect()->query('select * from users');
+    $dataMail = $choice->fetch_all();
+    for ($i = 0; $i < count($dataMail); $i++) {
+        if ($dataMail[$i][3] == $userMail) {
+            $idUser = $dataMail[$i][0];
+        }
+    }
     getConnect()->query("INSERT INTO deliveryusers VALUES (NULL, '$idUser', '$address', '$userComment')");
 }
 
@@ -75,7 +79,14 @@ function sendMail()
     $idOrder = mysqli_fetch_row($id);
     $idOrderResult = $idOrder[0];
     $time = date('d.m.Y h:i');
-    $idUser = checkIdOrder($userMail);
+
+    $choice = getConnect()->query('select * from users');
+    $dataMail = $choice->fetch_all();
+    for ($i = 0; $i < count($dataMail); $i++) {
+        if ($dataMail[$i][3] == $userMail) {
+            $idUser = $dataMail[$i][0];
+        }
+    }
     $userOderSql = getConnect()->query("SELECT COUNT(*) as count FROM deliveryusers WHERE user_id = '$idUser'");
     $userOder = mysqli_fetch_array($userOderSql);
     $countOder = $userOder[0];
@@ -97,19 +108,6 @@ function sendMail()
 
 }
 
-function checkIdOrder($userMail)
-{
-    // Функция проверяет схожесть email-а
-    $choice = getConnect()->query('select * from users');
-    $dataMail = $choice->fetch_all();
-    for ($i = 0; $i < count($dataMail); $i++) {
-        if ($dataMail[$i][3] == $userMail) {
-            $idUser = $dataMail[$i][0];
-        }
-    }
-    return $idUser;
-}
-
 function error()
 {
     $fail = "Ведите пожалуйста: e-mail, телефон и свое имя, а также не забудьте адрес <BR>";
@@ -119,6 +117,7 @@ function error()
 
 function main()
 {
+//    getConnect();
     $users = getUser();
     if (($users)) {
         addUser(getUser());
