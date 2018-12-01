@@ -1,9 +1,11 @@
 <?php
 function getConnect()
 {
-    $mySqli = new mysqli('localhost', 'root', '', 'bdvp1');
-    return $mySqli;
+    $dsn = 'mysql:host = localhost;dbname=bdvp1;charset=utf8';
+    $connection = new PDO($dsn, 'root', '');
+    return $connection;
 }
+
 
 function getUser()
 {
@@ -21,7 +23,6 @@ function getUser()
         . "Корпус № " . $userPart . "<BR>"
         . "Квартира № " . $userappt . "<BR>"
         . "Этаж № " . $userFloor;
-
     if (!empty($userName) && !empty($userPhone) && !empty($userMail)) {
         $date = [
             'Name' => $userName,
@@ -37,19 +38,19 @@ function getUser()
 
 function addUser()
 {
-    $data = func_get_args();
-    $userName = $data[0]['Name'];
-    $userPhone = $data[0]['Phone'];
-    $userMail = $data[0]['Mail'];
+    $date = getUser();
+    $userName = $date['Name'];
+    $userPhone = $date['Phone'];
+    $userMail = $date['Mail'];
+    $choiceResult = getConnect()->prepare('select * from users');
+    $choiceResult->execute();
+    $dataMail = $choiceResult->fetchall(PDO::FETCH_ASSOC);
 
-    $choiceResult = getConnect()->query('select * from users');
-    $dataMail = $choiceResult->fetch_all();
     for ($i = 0; $i < count($dataMail); $i++) {
-        if ($dataMail[$i][3] == $userMail) {
-            $result = $dataMail[$i][3];
+        if ($dataMail[$i]['Mail'] == $userMail) {
+            $result = $dataMail[$i]['Mail'];
         }
     }
-
     if ($result != $userMail) {
         getConnect()->query("INSERT INTO users VALUES (NULL, '$userName', '$userPhone', '$userMail')");
     }
@@ -57,54 +58,57 @@ function addUser()
 
 function addOrder()
 {
-    $data = func_get_args();
-    $userMail = $data[0]['Mail'];
-    $address = $data[0]['Address'];
-    $userComment = $data[0]['Comment'];
+    $date = getUser();
+    $userMail = $date['Mail'];
+    $address = $date['Address'];
+    $userComment = $date['Comment'];
     $idUser = checkIdOrder($userMail);
     getConnect()->query("INSERT INTO deliveryusers VALUES (NULL, '$idUser', '$address', '$userComment')");
 }
 
 function sendMail()
 {
-    $data = func_get_args();
-    $userMail = $data[0]['Mail'];
-    $userAddress = $data[0]['Address'];
-    $userComment = $data[0]['Comment'];
-    $id = getConnect()->query('SELECT id FROM deliveryusers ORDER BY id DESC LIMIT 0 , 1');
-    $idOrder = mysqli_fetch_row($id);
-    $idOrderResult = $idOrder[0];
+    $date = getUser();
+    $userMail = $date['Mail'];
+    $address = $date['Address'];
+    $userComment = $date['Comment'];
+    $id = getConnect()->prepare('SELECT id FROM deliveryusers ORDER BY id DESC LIMIT 0 , 1');
+    $id->execute([0]);
+    $idOrder = $id->fetchColumn();
     $time = date('d.m.Y h:i');
     $idUser = checkIdOrder($userMail);
-    $userOderSql = getConnect()->query("SELECT COUNT(*) as count FROM deliveryusers WHERE user_id = '$idUser'");
-    $userOder = mysqli_fetch_array($userOderSql);
-    $countOder = $userOder[0];
+    $userOderSql = getConnect()->prepare("SELECT COUNT(*) as count FROM deliveryusers WHERE user_id = '$idUser'");
+    $userOderSql->execute([0]);
+    $countOder = $userOderSql->fetchColumn();
 
     if ($countOder > 1) {
-        $thx = "<BR>Спасибо за покупку!<BR> Это Ваша $countOder покупка!<BR>";
+        $thx = "<BR>Спасибо за покупку!<BR>Это Ваша $countOder покупка!<BR>";
     } else {
         $thx = "<BR>Спасибо за Заказ, это Ваша первая покупка<BR>";
     }
 
-    $yourNumberOder1 = "Ваш номер Заказа: $idOrderResult <BR>";
-    $deliveryInAddress1 = "<BR>Будет доставлен по адресу: $userAddress<BR>";
+    $yourNumberOder1 = "Ваш номер Заказа: $idOrder <BR>";
+    $deliveryInAddress1 = "<BR>Будет доставлен по адресу: $address<BR>";
     $comment1 = "Коментарии к Заказу: $userComment <BR>";
 
     $mail = $yourNumberOder1 . $deliveryInAddress1 . $comment1 . $thx . $time;
-    $dir = "./mailDelivery/";
-    file_put_contents($dir . "$idOrderResult.txt", $mail);
-    return $mail;
 
+    $dir = "./mailDelivery/";
+    file_put_contents($dir . "$idOrder.txt", $mail);
+    return $mail;
 }
 
 function checkIdOrder($userMail)
 {
-    // Функция проверяет схожесть email-а
-    $choice = getConnect()->query('select * from users');
-    $dataMail = $choice->fetch_all();
+    // Функция проверяет схожесть на email Клиента
+    // и возвращает ID клиента
+    $choice = getConnect()->prepare('select * from users');
+    $choice->execute();
+    $dataMail = $choice->fetchall(PDO::FETCH_ASSOC);
+
     for ($i = 0; $i < count($dataMail); $i++) {
-        if ($dataMail[$i][3] == $userMail) {
-            $idUser = $dataMail[$i][0];
+        if ($dataMail[$i]['Mail'] == $userMail) {
+            $idUser = $dataMail[$i]['id'];
         }
     }
     return $idUser;
@@ -121,14 +125,12 @@ function main()
 {
     $users = getUser();
     if (($users)) {
-        addUser(getUser());
-        addOrder(getUser());
-        sendMail(getUser());
+        addUser();
+        addOrder();
+        echo sendMail();
     } else {
         error();
     }
 }
 
-echo '<PRE>';
-print_r(main());
-die();
+main();
